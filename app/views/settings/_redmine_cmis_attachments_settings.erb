@@ -1,0 +1,12 @@
+ <%= stylesheet_link_tag 'cmis_alfresco.css', :plugin => 'redmine_cmis_attachments' %>  
+<h2><%=l("label_titulo_conf")%>:</h2>
+<% RedmineCmisAttachmentsSettings::config_params.each do |param| %>
+<p>
+  <label><%=l("label_" + param)%></label>
+  <%= text_field_tag 'settings[' + param + ']', settings[param] %>
+</p>
+<% end %>
+<p>
+  <label><%=l("label_document_type")%></label>
+  <%= select_tag('settings[document_type]', options_for_select(RedmineCmisAttachmentsSettings::document_types.to_a.collect{ |key, value| [value, key] }, settings['document_type'])) %>
+</p>

@@ -1,0 +1,48 @@
+# encoding: utf-8
+# 
+# Redmine plugin for Document Management System "Features"
+#
+# Copyright (C) 2011    Vít Jonáš <vit.jonas@gmail.com>
+# Copyright (C) 2015    Agustin Ivorra <agustinivorra@gmail.com>
+# Copyright (C) 2011-15 Karel Pičman <karel.picman@kontron.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+es:
+  label_titulo_conf: Configuracion Conexion ALFRESCO 
+  label_server_url: URL Servidor
+  label_repository_id: ID del repositorio
+  label_documents_path_base: ID carpeta base
+  label_server_login: Usuario
+  label_server_password: Contraseña
+  label_proxy: ¿Utiliza Proxy? (true/false)
+  label_temp_folder_cmis_object_id: ID carpeta temporal
+  label_document_type: Tipo documental
+
+  msg_connection_error: Ocurrió un error de conexión con Alfresco, revise la configuración
+
+  January: Enero
+  February: Febrero
+  March: Marzo
+  April: Abril
+  May: Mayo
+  June: Junio
+  July: Julio
+  August: Agosto
+  September: Septiembre
+  October: Octubre
+  November: Noviembre
+  December: Diciembre
+  

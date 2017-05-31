@@ -1,0 +1,9 @@
+
+.tabular.settings p {
+    padding-left: 200px !important;
+}
+
+.tabular input, .tabular select {
+    max-width: none !important;
+    width: 500px;
+}

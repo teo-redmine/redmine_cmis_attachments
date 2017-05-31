@@ -1,0 +1,19 @@
+<%= form_for [:project, @project],
+            :url => { :controller => 'redmine_cmis_attachments_state', :action => 'user_pref_save', :id => @project },
+            :html => {:id => 'redmine_cmis_attachments-form'} do |f| %>
+<div class="box tabular">
+  <p>
+    <% param = "override_global_cmis_settings" %>
+    <label><%=l("label_" + param)%></label>
+    <%=check_box_tag param, RedmineCmisAttachmentsSettings::get_project_param_value(@project, param)%>
+  </p>
+<% RedmineCmisAttachmentsSettings::config_params.each do |param| %>
+<p>
+  <label><%=l("label_" + param)%></label>
+  <%= text_field_tag param, RedmineCmisAttachmentsSettings::get_project_param_value(@project, param) %>
+</p>
+<% end %>
+</div>
+<p><%= submit_tag l(:button_save) %></p>
+
+<% end %>
