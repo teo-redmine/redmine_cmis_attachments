@@ -78,8 +78,8 @@ module RedmineS3
             id_project_folder_cmis = projectAux.cmis_object_id
             id_folder_cmis = RedmineS3::Connection.my_create_folder id_project_folder_cmis, l(:label_issue_plural).upcase
             t = Tracker.find(issue_father.tracker_id)
-            #target_folder = t.name + "_" + issue_father.id.to_s + "_" + issue_father.subject
-            target_folder = t.name + "_" + issue_father.id.to_s
+            target_folder = t.name + "_" + issue_father.id.to_s + "_" + issue_father.subject
+            #target_folder = t.name + "_" + issue_father.id.to_s
           else
             versionAux = i.fixed_version.name
             projectAux = Project.find(i.project_id)
@@ -134,7 +134,7 @@ module RedmineS3
 
         propertiesAux = Hash.new
         propertiesAux['cmis:description'] = descriptionAux
-        
+
         Rails.logger.info('Usando tipo documental ' + document_type.to_s)
         if document_type != nil && document_type != '' && document_type != 'cmis:document'
           # Se introducen en el mapa los metadatos personalizados
@@ -157,6 +157,21 @@ module RedmineS3
         when self.container_type == PETICION_STRING
           return Issue.find(self.container_id)
         end
+      end
+
+      def link_to_attachment_of
+        controllerAux = 'issues'
+        case
+        when self.container_type == PROYECTO_STRING
+          controllerAux = 'projects'
+        when self.container_type == PETICION_STRING
+          controllerAux = 'issues'
+        end
+        attachment_map = Hash.new
+        attachment_map[:controller] = controllerAux
+        attachment_map[:action] = 'show'
+        attachment_map[:id] = self.container_id
+        return attachment_map
       end
 
       def put_to_s3

@@ -123,5 +123,27 @@ module RedmineS3
       {}
     end
 
+    def is_project
+      resultado = redmine_project_id
+      if resultado.nil?
+        return false
+      else
+        return true
+      end
+    end
+
+    def redmine_project_id
+      return RedmineCmisAttachmentsSettings.get_project_by_value_no_inherit("documents_path_base", self.id)
+    end
+
+    def redmine_project_identifier
+      if !redmine_project_id.nil?
+        projectAux = Project.find(redmine_project_id)
+        if !projectAux.nil? && !projectAux.identifier.nil?
+          return projectAux.identifier
+        end
+      end
+      return nil
+    end
   end
 end

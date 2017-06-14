@@ -7,6 +7,7 @@ Redmine::Plugin.register :redmine_cmis_attachments do
   author 'Junta de Andalucía - Guadaltel'
   description 'Plugin para utilizar repositorio CMIS de Alfresco'
   version '0.0.1'
+  url 'https://github.com/teo-redmine/redmine_cmis_attachments.git'
   author_url "http://www.guadaltel.com"
 
   requires_redmine :version_or_higher => '3.0.0'

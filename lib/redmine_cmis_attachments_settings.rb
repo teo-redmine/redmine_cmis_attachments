@@ -72,6 +72,15 @@ module RedmineCmisAttachmentsSettings
       end
     end
 
+    def get_project_by_value_no_inherit(param, value)
+      aux = RedmineCmisAttachmentsProjectParam.where(param: param, value: value)
+      if aux.empty?
+        return nil
+      else
+        return aux[0].project_id
+      end
+    end
+
     def set_project_param_value(project, param, value)
       res = get_project_param_row(project, param)
       res.value = value
