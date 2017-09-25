@@ -4,7 +4,7 @@ require 'redmine_plugin_support'
 Dir[File.expand_path(File.dirname(__FILE__)) + "/lib/tasks/**/*.rake"].sort.each { |ext| load ext }
 
 RedminePluginSupport::Base.setup do |plugin|
-  plugin.project_name = 'redmine_s3'
+  plugin.project_name = 'redmine_rca'
   plugin.default_task = [:test]
   plugin.tasks = [:doc, :release, :clean, :test]
   # TODO: gem not getting this automaticly
@@ -14,12 +14,12 @@ end
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |s|
-    s.name = "redmine_s3"
-    s.summary = "Plugin to have Redmine store uploads on S3"
-    s.email = "edavis@littlestreamsoftware.com"
-    s.homepage = "http://projects.tigrish.com/projects/redmine-s3"
-    s.description = "Plugin to have Redmine store uploads on S3"
-    s.authors = ["Christopher Dell"]
+    s.name = "redmine_rca"
+    s.summary = "Plugin to have Redmine store uploads on Redmine CMIS Attachments"
+    s.email = ""
+    s.homepage = "https://github.com/teo-redmine/redmine_cmis_attachments"
+    s.description = "Plugin to have Redmine store uploads on Redmine CMIS Attachments"
+    s.authors = ["Junta de Andalucía"]
     s.rubyforge_project = "TODO" # TODO
     s.files =  FileList[
                         "[A-Z]*",

@@ -24,7 +24,6 @@ module RedmineCmisAttachmentsSettings
         "documents_path_base", 
         "server_login", 
         "server_password", 
-        #"proxy", 
         "temp_folder_cmis_object_id"]
       return types
     end

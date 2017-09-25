@@ -21,15 +21,28 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 es:
-  label_titulo_conf: Configuracion Conexion ALFRESCO 
+  label_titulo_conf: Configuración Conexión ALFRESCO 
   label_server_url: URL Servidor
+  label_server_url_info: URL Servidor.
+  label_server_url_default: http://HOST:PORT/alfresco/api/-default-/public/cmis/versions/1.1/browser
   label_repository_id: ID del repositorio
+  label_repository_id_info: Identificador del repositorio.
+  label_repository_id_default: -default-
   label_documents_path_base: ID carpeta base
+  label_documents_path_base_info: Identificador cmis de la carpeta base.
+  label_documents_path_base_default: XXX-XXX-XXX-XXX
   label_server_login: Usuario
+  label_server_login_info: Usuario de acceso al repositorio.
+  label_server_login_default: XXX
   label_server_password: Contraseña
-  label_proxy: ¿Utiliza Proxy? (true/false)
+  label_server_password_info: Contraseña de acceso al repositorio.
+  label_server_password_default: XXX
   label_temp_folder_cmis_object_id: ID carpeta temporal
+  label_temp_folder_cmis_object_id_info: Identificador cmis de carpeta temporal.
+  label_temp_folder_cmis_object_id_default: XXX-XXX-XXX-XXX
   label_document_type: Tipo documental
+  label_document_type_info: Tipo documental.
+  label_document_type_default: cmis:document
 
   msg_connection_error: Ocurrió un error de conexión con Alfresco, revise la configuración
 

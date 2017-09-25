@@ -1,4 +1,4 @@
-module RedmineS3
+module RedmineRca
   module ProjectPatch
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
@@ -17,13 +17,14 @@ module RedmineS3
 
     module InstanceMethods
       def delete_cmis_folder
-        RedmineS3::Connection.delete cmis_object_id unless cmis_object_id.nil?
+        Rails.logger.debug("\n[redmine_cmis_attachments] delete_cmis_folder on project #{self.id}")
+        RedmineRca::Connection.delete_with_children cmis_object_id unless cmis_object_id.nil?
       end
 
       def update_cmis_folder
         Rails.logger.debug("\n[redmine_cmis_attachments] update_cmis_folder on project #{self.id}")
         create_folder if cmis_object_id.nil?
-        move_folder if parent_cmis_object_id != RedmineS3::Connection.get_parent(cmis_object_id)
+        move_folder if parent_cmis_object_id != RedmineRca::Connection.get_parent(cmis_object_id)
         update_description(cmis_object_id)
         Rails.logger.debug("[redmine_cmis_attachments] project #{self.id} has cmis_object_id #{cmis_object_id}\n")
       end
@@ -31,8 +32,15 @@ module RedmineS3
       def create_folder
         #Modificado el identificador de la carpeta que se guarda del proyecto
         #cogia el nombre y daba error, mejor con el identificador unico del proyecto
-        #cmis_object_id = RedmineS3::Connection.mkdir(parent_cmis_object_id, self.name)
-        cmis_object_id = RedmineS3::Connection.mkdir(parent_cmis_object_id, self.identifier)
+        #cmis_object_id = RedmineRca::Connection.mkdir(parent_cmis_object_id, self.name)
+        #cmis_object_id = RedmineRca::Connection.mkdir(parent_cmis_object_id, self.identifier)
+        nameFolderProject = self.name
+        folder = RedmineRca::Connection.folder_by_tree_and_name(parent_cmis_object_id, nameFolderProject)
+        if !folder.nil?
+          nameFolderProject += '-' + self.identifier
+        end
+        nameFolderProject = nameFolderProject.gsub(/[\/\*\<\>\:\"\'\?\|\\]|[\. ]$/, '_')
+        cmis_object_id = RedmineRca::Connection.mkdir(parent_cmis_object_id, nameFolderProject)
         update_description(cmis_object_id)
         RedmineCmisAttachmentsSettings.set_project_param_value(self, "documents_path_base", cmis_object_id)
       end
@@ -49,12 +57,13 @@ module RedmineS3
 
       def move_folder
         Rails.logger.debug("[redmine_cmis_attachments] update_folder_location for project #{self.id}\n")
-        #RedmineS3::Connection.move cmis_object_id, self.name, parent_cmis_object_id
-        RedmineS3::Connection.move cmis_object_id, self.identifier, parent_cmis_object_id, nil, nil, self.identifier
+        #RedmineRca::Connection.move cmis_object_id, self.name, parent_cmis_object_id
+        #RedmineRca::Connection.move cmis_object_id, self.identifier, parent_cmis_object_id, nil, nil, self.identifier
+        RedmineRca::Connection.move cmis_object_id, self.name, parent_cmis_object_id, nil, nil, self.cmis_object_id
       end
 
       def update_description(cmis_object_id)
-        folder = RedmineS3::Connection.get_folder(cmis_object_id)
+        folder = RedmineRca::Connection.get_folder(cmis_object_id)
         if !folder.nil?
           folder.update_properties('cmis:description'=>self.description)
         end

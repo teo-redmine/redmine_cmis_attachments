@@ -1,6 +1,6 @@
 require 'cmis'
 
-module RedmineS3
+module RedmineRca
   class Connection
     @@repository = nil
     CMIS_FOLDER = 'cmis:folder';
@@ -86,7 +86,26 @@ module RedmineS3
       end
 
       def delete(cmis_object_id)
-        begin          
+        begin
+          self.repository.object(cmis_object_id).delete
+        rescue CMIS::Exceptions::ObjectNotFound
+          Rails.logger.error("[redmine_cmis_attachments] Trying to erase inexistent object #{filename}")
+        rescue Exception => e
+          Rails.logger.error("[redmine_cmis_attachments] Error eliminando objeto. Causa: " + e.to_s)
+          return nil
+        end
+      end
+
+      def delete_with_children(cmis_object_id)
+        begin
+          if !self.repository.object(cmis_object_id).children.nil? && self.repository.object(cmis_object_id).children.total > 0
+            children = self.repository.object(cmis_object_id).children
+            children.each_child(:limit => 1000) do |c|
+              Rails.logger.debug("...erasing child " + c.cmis_object_id)
+              delete_with_children(c.cmis_object_id)
+            end
+          end
+          Rails.logger.debug("...erasing parent " + cmis_object_id)
           self.repository.object(cmis_object_id).delete
         rescue CMIS::Exceptions::ObjectNotFound
           Rails.logger.error("[redmine_cmis_attachments] Trying to erase inexistent object #{filename}")
@@ -135,17 +154,18 @@ module RedmineS3
 
       def subfolder_by_name(parent_folder, name)
         begin
-          q = repository.query "SELECT * FROM cmis:folder WHERE IN_FOLDER('#{parent_folder.cmis_object_id}') and cmis:name='#{name}'"
+          nameAux = name.gsub(/[\/\*\<\>\:\"\'\?\|\\]|[\. ]$/, '_')
+          q = repository.query "SELECT * FROM cmis:folder WHERE IN_FOLDER('#{parent_folder.cmis_object_id}') and cmis:name='#{nameAux}'"
           if q.total > 0
             subfolder = q.results[0]
           else
             newfolder = repository.new_folder
-            newfolder.name = name
+            newfolder.name = nameAux
             newfolder.object_type_id = CMIS_FOLDER
             subfolder = parent_folder.create(newfolder)
           end
         rescue Exception => e
-          Rails.logger.error("[redmine_cmis_attachments] Error obteniendo/creando subcarpeta. Causa: " + e.to_s)
+          Rails.logger.error("[redmine_cmis_attachments] (subfolder_by_name) Error obteniendo/creando subcarpeta. Causa: " + e.to_s)
           return nil
         end
       end
@@ -153,12 +173,13 @@ module RedmineS3
       # Obtiene una carpeta con el nombre indicado que está bajo la raíz indicada
       def folder_by_tree_and_name(root, name)
         begin
-          q = repository.query "SELECT * FROM cmis:folder WHERE IN_TREE('#{root}') and cmis:name='#{name}'"
+          nameAux = name.gsub(/[\/\*\<\>\:\"\'\?\|\\]|[\. ]$/, '_')
+          q = repository.query "SELECT * FROM cmis:folder WHERE IN_TREE('#{root}') and cmis:name='#{nameAux}'"
           if q.total > 0
             folder = q.results[0]
           end
         rescue Exception => e
-          Rails.logger.error("[redmine_cmis_attachments] Error obteniendo/creando subcarpeta. Causa: " + e.to_s)
+          Rails.logger.error("[redmine_cmis_attachments] (folder_by_tree_and_name) Error obteniendo/creando subcarpeta. Causa: " + e.to_s)
           return nil
         end
       end
@@ -195,13 +216,14 @@ module RedmineS3
       #en los dos casos para poder continuar creando subcarpetas a partir de ella
       def my_create_folder(target_folder_cmis_object_id, name)
         begin
+          nameAux = name.gsub(/[\/\*\<\>\:\"\'\?\|\\]|[\. ]$/, '_')
           target_folder = self.repository.object(target_folder_cmis_object_id)
-          q = repository.query "SELECT * FROM cmis:folder WHERE IN_FOLDER('#{target_folder.cmis_object_id}') and cmis:name='#{name}'"
+          q = repository.query "SELECT * FROM cmis:folder WHERE IN_FOLDER('#{target_folder.cmis_object_id}') and cmis:name='#{nameAux}'"
           if q.total > 0
             subfolder = q.results[0]
           else
             newfolder = repository.new_folder
-            newfolder.name = name
+            newfolder.name = nameAux
             newfolder.object_type_id = CMIS_FOLDER
             subfolder = target_folder.create(newfolder)
           end
@@ -212,23 +234,31 @@ module RedmineS3
         end
       end
 
-      def deleteFolder(cmis_object_id, eventoIssue)
+      def delete_folder(cmis_object_id, eventoIssue)
+        Rails.logger.debug("[redmine_cmis_attachments] delete_folder cmis_object_id: #{cmis_object_id} eventoIssue: #{eventoIssue}.")
         begin
-          q = repository.query "SELECT * FROM cmis:folder WHERE cmis:objectId='#{cmis_object_id}'"
-          if q.total > 0
-            result = q.results[0]
-            if (eventoIssue || result.children.total == 0)
-              self.repository.object(result.cmis_object_id).delete
+          if is_temp_folder(cmis_object_id)
+            Rails.logger.error("[redmine_cmis_attachments] Se ha intentado eliminar la carpeta temporal.")
+          elsif is_root_folder(cmis_object_id)
+            Rails.logger.error("[redmine_cmis_attachments] Se ha intentado eliminar la carpeta raíz.")
+          else
+            q = repository.query "SELECT * FROM cmis:folder WHERE cmis:objectId='#{cmis_object_id}'"
+            if q.total > 0
+              result = q.results[0]
+              if ((eventoIssue || result.children.total == 0) && is_project(result.cmis_object_id) == 'false')
+                self.repository.object(result.cmis_object_id).delete
+              end
             end
           end
         rescue CMIS::Exceptions::ObjectNotFound
-          Rails.logger.error("[redmine_cmis_attachments] deleteFolder Trying to erase inexistent object #{cmis_object_id}")
+          Rails.logger.error("[redmine_cmis_attachments] delete_folder Trying to erase inexistent object #{cmis_object_id}")
         rescue Exception => e
           Rails.logger.error("[redmine_cmis_attachments] Error borrando carpeta. Causa: " + e.to_s)
         end
       end
 
-      def deleteFolderByName(nameFolder, eventoIssue)
+      def delete_folder_by_name(nameFolder, eventoIssue)
+        Rails.logger.debug("[redmine_cmis_attachments] delete_folder_by_name nameFolder: #{nameFolder} eventoIssue: #{eventoIssue}.")
         begin
           q = repository.query "SELECT * FROM cmis:folder WHERE cmis:name='#{nameFolder}'"
           if q.total > 0
@@ -238,7 +268,7 @@ module RedmineS3
             end
           end
         rescue CMIS::Exceptions::ObjectNotFound
-          Rails.logger.error("[redmine_cmis_attachments] deleteFolderByName Trying to erase inexistent object #{nameFolder}")
+          Rails.logger.error("[redmine_cmis_attachments] delete_folder_by_name Trying to erase inexistent object #{nameFolder}")
         rescue Exception => e
           Rails.logger.error("[redmine_cmis_attachments] Error borrando carpeta. Causa: " + e.to_s)
         end
@@ -246,7 +276,7 @@ module RedmineS3
 
       #Obtiene un array de carpetas pertenecientes al archivo a borrar,
       # que se verificaran si son posibles de borrar
-       def obtain_cmis_folders(cmis_object_id, foldersRoot, project_identifier = nil)
+       def obtain_cmis_folders(cmis_object_id, foldersRoot)
         begin
           result = {}
           i = 0
@@ -254,10 +284,6 @@ module RedmineS3
           cmisObject = self.repository.object(cmis_object_id)
           father = cmisObject.parents[0]
           foundRootFolder = false
-          
-          if project_identifier != nil && project_identifier != '' && cmisObject.name == project_identifier
-            foundRootFolder = true
-          end
 
           while (father != nil && ((father.parents.nil? && father.parents.any?) || !foundRootFolder))
             for j in 0..foldersRoot.length
@@ -292,17 +318,18 @@ module RedmineS3
             parent_folder = document.parents[0]
 
             if parent_folder != nil
-              files_folder = I18n.t(:label_file_plural).upcase
-              issues_folder = I18n.t(:label_issue_plural).upcase
-              news_folder = I18n.t(:label_news_plural).upcase
-              documents_folder = I18n.t(:label_document_plural).upcase
-              wikis_folder = I18n.t(:label_wiki).upcase
-              messages_folder = I18n.t(:label_message_plural).upcase
-              foldersRoot = Array[files_folder,issues_folder,news_folder,documents_folder,wikis_folder,messages_folder]
-              if project_identifier != nil && project_identifier != ''
-                foldersRoot.push(project_identifier)
-              end
-              foldersFathers = obtain_cmis_folders(document.cmis_object_id, foldersRoot, project_identifier)
+#              files_folder = I18n.t(:label_file_plural).upcase
+#              issues_folder = I18n.t(:label_issue_plural).upcase
+#              news_folder = I18n.t(:label_news_plural).upcase
+#              documents_folder = I18n.t(:label_document_plural).upcase
+#              wikis_folder = I18n.t(:label_wiki).upcase
+#              messages_folder = I18n.t(:label_message_plural).upcase
+#              foldersRoot = Array[files_folder,issues_folder,news_folder,documents_folder,wikis_folder,messages_folder]
+              foldersRoot = Array.new
+              root_folder_cmis_object_id = Setting.plugin_redmine_cmis_attachments["documents_path_base"]
+              main_root = self.repository.object(root_folder_cmis_object_id)
+              foldersRoot.push(main_root.name)
+              foldersFathers = obtain_cmis_folders(document.cmis_object_id, foldersRoot)
             end
           end
 
@@ -331,7 +358,7 @@ module RedmineS3
 
           if foldersFathers != nil && !foldersFathers.empty?
             for i in 0..(foldersFathers.length-1)
-              deleteFolder(foldersFathers[i].cmis_object_id, false)
+              delete_folder(foldersFathers[i].cmis_object_id, false)
             end
           end
         rescue Exception => e
@@ -423,6 +450,33 @@ module RedmineS3
         timestamp = "_#{DateTime.now.to_i.to_s}" if timestamp.nil?
         extn = File.extname  filename
         nameChange = "#{File.basename filename, extn}#{timestamp}#{extn}"
+      end
+
+      def is_temp_folder(cmis_object_id)
+        temp_folder_cmis_object_id = Setting.plugin_redmine_cmis_attachments["temp_folder_cmis_object_id"]
+        isTempFolder = false
+        if !temp_folder_cmis_object_id.nil? && temp_folder_cmis_object_id != '' && temp_folder_cmis_object_id == cmis_object_id
+          isTempFolder = true
+        end
+        return isTempFolder
+      end
+
+      def is_root_folder(cmis_object_id)
+        root_folder_cmis_object_id = Setting.plugin_redmine_cmis_attachments["documents_path_base"]
+        isRootFolder = false
+        if !root_folder_cmis_object_id.nil? && root_folder_cmis_object_id != '' && root_folder_cmis_object_id == cmis_object_id
+          isRootFolder = true
+        end
+        return isRootFolder
+      end
+
+      def is_project(cmis_object_id)
+        resultado = RedmineCmisAttachmentsSettings.get_project_by_value_no_inherit("documents_path_base", cmis_object_id)
+        if resultado.nil?
+          return 'false'
+        else
+          return 'true'
+        end
       end
     end
   end

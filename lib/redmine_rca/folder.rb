@@ -1,4 +1,4 @@
-module RedmineS3
+module RedmineRca
   class Folder
     def initialize(cmis_object_id)
       begin
@@ -115,7 +115,7 @@ module RedmineS3
       false
     end
 
-    def dmsf_path
+    def rcb_path
       []
     end
 

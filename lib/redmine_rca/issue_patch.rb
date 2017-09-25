@@ -1,4 +1,4 @@
-module RedmineS3
+module RedmineRca
   module IssuePatch
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
@@ -18,11 +18,11 @@ module RedmineS3
 
     module InstanceMethods
       def delete_cmis_attachments
-        Rails.logger.debug("delete_cmis_attachments #{}")
+        Rails.logger.debug("\n[redmine_cmis_attachments] delete_cmis_attachments on issue #{self.id}")
         t = Tracker.find(self.tracker_id)
         nameFolder = t.name + "_" + self.id.to_s + "_" + self.subject
         #nameFolder = t.name + "_" + self.id.to_s
-        RedmineS3::Connection.deleteFolderByName(nameFolder, true)
+        RedmineRca::Connection.delete_folder_by_name(nameFolder, true)
       end
 
       def update_cmis_attachments
@@ -37,7 +37,7 @@ module RedmineS3
       def update_cmis_folder
         Rails.logger.debug("\n[redmine_cmis_attachments] update_cmis_folder on issue #{self.id}")
         if !cmis_object_id.nil?
-          folder = RedmineS3::Connection.get_folder(cmis_object_id)
+          folder = RedmineRca::Connection.get_folder(cmis_object_id)
           if !folder.nil?
             folder.update_properties('cmis:description'=>self.description)
             folder.update_properties('cm:title'=>self.subject)
@@ -52,7 +52,7 @@ module RedmineS3
           project = Project.find(issue.project_id)
           t = Tracker.find(self.tracker_id)
           nameFolder = t.name + "_" + self.id.to_s + "_" + self.subject
-          folder = RedmineS3::Connection.folder_by_tree_and_name(project.cmis_object_id, nameFolder)
+          folder = RedmineRca::Connection.folder_by_tree_and_name(project.cmis_object_id, nameFolder)
           if !folder.nil?
             return folder.cmis_object_id
           end

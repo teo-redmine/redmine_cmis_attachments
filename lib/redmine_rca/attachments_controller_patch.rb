@@ -1,4 +1,4 @@
-module RedmineS3
+module RedmineRca
   module AttachmentsControllerPatch
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
@@ -7,10 +7,10 @@ module RedmineS3
       # Same as typing in the class
       base.class_eval do
         unloadable # Send unloadable so it will not be unloaded in development
-        before_filter :find_attachment_s3, :only => [:show]
-        before_filter :download_attachment_s3, :only => [:download]
-        before_filter :find_thumbnail_attachment_s3, :only => [:thumbnail]
-        before_filter :find_editable_attachments_s3, :only => [:edit, :update]
+        before_filter :find_attachment_rca, :only => [:show]
+        before_filter :download_attachment_rca, :only => [:download]
+        before_filter :find_thumbnail_attachment_rca, :only => [:thumbnail]
+        #before_filter :find_editable_attachments_rca, :only => [:edit, :update]
         skip_before_filter :file_readable
       end
     end
@@ -20,7 +20,7 @@ module RedmineS3
 
     module InstanceMethods
       def check_connection
-        cmis_connection = RedmineS3::Connection.establish_connection
+        cmis_connection = RedmineRca::Connection.establish_connection
         if cmis_connection.nil?
           flash[:error] = I18n.t('msg_connection_error', default: '***Connection Error***')
           return false
@@ -28,9 +28,9 @@ module RedmineS3
         return true
       end
 
-      def find_attachment_s3
+      def find_attachment_rca
         if @attachment.is_diff?
-          @diff = RedmineS3::Connection.get(@attachment.disk_filename)
+          @diff = RedmineRca::Connection.get(@attachment.disk_filename)
           @diff_type = params[:type] || User.current.pref[:diff_type] || 'inline'
           @diff_type = 'inline' unless %w(inline sbs).include?(@diff_type)
           # Save diff type as user preference
@@ -40,38 +40,38 @@ module RedmineS3
           end
           render :action => 'diff'
         elsif @attachment.is_text? && @attachment.filesize <= Setting.file_max_size_displayed.to_i.kilobyte
-          @content = RedmineS3::Connection.get(@attachment.disk_filename)
+          @content = RedmineRca::Connection.get(@attachment.disk_filename)
           render :action => 'file'
         else
-          download_attachment_s3
+          download_attachment_rca
         end
       end
 
-      def download_attachment_s3
+      def download_attachment_rca
         if !check_connection
           redirect_to :back
         else
           if @attachment.container.is_a?(Version) || @attachment.container.is_a?(Project)
             @attachment.increment_download
           end
-          if RedmineS3::Connection.proxy?
-            send_data RedmineS3::Connection.get(@attachment.disk_filename),
+          if RedmineRca::Connection.proxy?
+            send_data RedmineRca::Connection.get(@attachment.disk_filename),
                                             :filename => filename_for_content_disposition(@attachment.filename),
                                             :type => detect_content_type(@attachment),
                                             :disposition => (@attachment.image? ? 'inline' : 'attachment')
           else
-            redirect_to(RedmineS3::Connection.object_url(@attachment.disk_filename))
+            redirect_to(RedmineRca::Connection.object_url(@attachment.disk_filename))
           end
         end
       end
 
-      def find_editable_attachments_s3
+      def find_editable_attachments_rca
         if @attachments
           @attachments.each { |a| a.increment_download }
         end
-        if RedmineS3::Connection.proxy?
+        if RedmineRca::Connection.proxy?
           @attachments.each do |attachment|
-            send_data RedmineS3::Connection.get(attachment.disk_filename),
+            send_data RedmineRca::Connection.get(attachment.disk_filename),
                                             :filename => filename_for_content_disposition(attachment.filename),
                                             :type => detect_content_type(attachment),
                                             :disposition => (attachment.image? ? 'inline' : 'attachment')
@@ -79,13 +79,13 @@ module RedmineS3
         end
       end
 
-      def find_thumbnail_attachment_s3
+      def find_thumbnail_attachment_rca
         update_thumb = 'true' == params[:update_thumb]
-        url          = @attachment.thumbnail_s3(update_thumb: update_thumb)
+        url          = @attachment.thumbnail_rca(update_thumb: update_thumb)
         return render json: {src: url} if update_thumb
         return if url.nil?
-        if RedmineS3::Connection.proxy?
-          send_data RedmineS3::Connection.get(url, ''),
+        if RedmineRca::Connection.proxy?
+          send_data RedmineRca::Connection.get(url, ''),
                     :filename => filename_for_content_disposition(@attachment.filename),
                     :type => detect_content_type(@attachment),
                     :disposition => (@attachment.image? ? 'inline' : 'attachment')

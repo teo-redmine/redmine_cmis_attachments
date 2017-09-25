@@ -4,9 +4,15 @@
 <p>
   <label><%=l("label_" + param)%></label>
   <%= text_field_tag 'settings[' + param + ']', settings[param] %>
+  <em class="info">
+    <%= l("label_" + param + "_info") %> <%= l(:label_default) %>: <%= l("label_" + param + "_default") %>
+  </em>
 </p>
 <% end %>
 <p>
   <label><%=l("label_document_type")%></label>
   <%= select_tag('settings[document_type]', options_for_select(RedmineCmisAttachmentsSettings::document_types.to_a.collect{ |key, value| [value, key] }, settings['document_type'])) %>
+  <em class="info">
+    <%= l("label_document_type_info") %> <%= l(:label_default) %>: <%= l("label_document_type_default") %>
+  </em>
 </p>
